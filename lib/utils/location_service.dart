@@ -3,34 +3,47 @@ import 'package:location/location.dart';
 class LocationService {
   Location location = Location();
 
-  Future<bool> cheackAndRequestLocationServes() async {
+  Future<void> _cheackAndRequestLocationServes() async {
     bool isServesEnable =
         await location.serviceEnabled(); // cheak location is enable
     if (!isServesEnable) {
       isServesEnable = await location.requestService();
       if (!isServesEnable) {
-        return false;
+        throw LocationServesException() ;
       }
     }
-    return true;
+    // return true;
   }
 
-  Future<bool> cheackAndRequestLocationPermission() async {
+  Future<void> _cheackAndRequestLocationPermission() async {
     PermissionStatus permissionState =
         await location.hasPermission(); // cheak permission state
     if (permissionState == PermissionStatus.denied) {
       permissionState = await location.requestPermission();
       
-      return permissionState == PermissionStatus.granted ;
+      if( permissionState != PermissionStatus.granted){
+         throw LocationPermissionException();
+      }
       
     } else if (permissionState == PermissionStatus.deniedForever) {
-      return false;
+      throw LocationPermissionException();
     }
-    return true;
+    // return true;
   }
 
-  void getRealTimeLocationData(void Function(LocationData)? onData) {
+  void getRealTimeLocationData(void Function(LocationData)? onData)async {
+    await _cheackAndRequestLocationServes();
+    await _cheackAndRequestLocationPermission();
     location.changeSettings(distanceFilter: 2) ; //هيتغير كل 2 متر
-    location.onLocationChanged.listen(onData);
+    location.onLocationChanged.listen(onData);  
+  }
+
+ Future<LocationData> getCurrentLocation() async{
+   await _cheackAndRequestLocationServes();
+   await _cheackAndRequestLocationPermission();
+  return await  location.getLocation() ;
   }
 }
+
+class LocationServesException implements Exception{}
+class LocationPermissionException implements Exception{}

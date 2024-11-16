@@ -12,7 +12,8 @@ class GoogleController extends GetxController {
   GoogleMapController? googleMapController;
   late LocationService locationService;
   late Location location;
-  bool isFirstcall = true ;
+  late TextEditingController textEditingController ;
+  bool isFirstcall = true;
   Set<Marker> markers = {};
   Set<Polyline> polylines = {};
   Set<Polygon> polygons = {};
@@ -23,12 +24,20 @@ class GoogleController extends GetxController {
     locationService = LocationService();
     initMarker();
     updateMyLocation();
+    textEditingController = TextEditingController() ;
+    textEditingController.addListener(() {
+      
+    });
+    //updateCurrentLocation();
     // initPolyline();
     // initPolygon();
     // initCircles();
     super.onInit();
   }
-
+   @override
+  void dispose() {
+    textEditingController.dispose();
+  }
   @override
   void onClose() {
     googleMapController?.dispose();
@@ -36,37 +45,48 @@ class GoogleController extends GetxController {
   }
 
   void updateMyLocation() async {
-    await locationService.cheackAndRequestLocationPermission();
-    bool hasPermission =
-        await locationService.cheackAndRequestLocationPermission();
-    if (hasPermission) {
+    try {
       locationService.getRealTimeLocationData(
         (locationData) {
           setmyLocationMarker(locationData);
           navigateCamera(locationData);
         },
       );
-    } else {
-      // show error bar
+    } catch ($e) {
+      //
     }
   }
 
+  void updateCurrentLocation() async {
+    try {
+      var locationData = await locationService.getCurrentLocation();
+      setmyLocationMarker(locationData) ;
+      var cameraPosition = CameraPosition(target: LatLng(locationData.latitude!, locationData.longitude!,),
+      zoom: 16
+      ) ;
+      googleMapController?.animateCamera(CameraUpdate.newCameraPosition(cameraPosition)) ;
+    } on LocationServesException catch (e) {
+      // todo
+    } on LocationPermissionException catch (e) {
+      // todo
+    } 
+  }
+
   void navigateCamera(LocationData locationData) {
-    if(!isFirstcall){
+    if (!isFirstcall) {
       googleMapController?.animateCamera(
-      CameraUpdate.newLatLng(
-        LatLng(locationData.latitude!, locationData.longitude!),
-      ),
-    );
-    }else{
+        CameraUpdate.newLatLng(
+          LatLng(locationData.latitude!, locationData.longitude!),
+        ),
+      );
+    } else {
       googleMapController?.animateCamera(
-      CameraUpdate.newCameraPosition(CameraPosition(target:  LatLng(locationData.latitude!, locationData.longitude!), zoom: 17)
-      ),
-      
-    );
-    isFirstcall = false ;
+        CameraUpdate.newCameraPosition(CameraPosition(
+            target: LatLng(locationData.latitude!, locationData.longitude!),
+            zoom: 17)),
+      );
+      isFirstcall = false;
     }
-    
   }
 
   void setmyLocationMarker(LocationData locationData) {
