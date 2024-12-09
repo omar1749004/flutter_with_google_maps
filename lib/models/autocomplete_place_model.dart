@@ -26,7 +26,7 @@
       reference: json['reference'],
       structuredFormatting: StructuredFormatting.fromJson(json['structured_formatting']),
       terms: (json['terms'] as List).map((term) => Term.fromJson(term)).toList(),
-      types: List<String>.from(json['types']),
+      types: List<String>.from(json['types']), // may be list of dynamic not itarable 
     );
   }
 }

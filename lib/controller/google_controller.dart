@@ -1,43 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:google_maps/models/autocomplete_place_model.dart';
 import 'package:google_maps/models/place_model.dart';
+import 'package:google_maps/utils/google_map_place_service.dart';
 import 'package:google_maps/utils/location_service.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:ui' as ui;
-
+import 'package:google_maps/models/place_details_model.dart';
 import 'package:location/location.dart';
+import 'package:uuid/uuid.dart';
 
 class GoogleController extends GetxController {
   GoogleMapController? googleMapController;
   late LocationService locationService;
-  late Location location;
-  late TextEditingController textEditingController ;
+  //late Location location;
+  late TextEditingController textEditingController;
+  late GoogleMapsPlaceService googleMapsPlaceService;
   bool isFirstcall = true;
+  List<PlaceAutoComplete> placeAutoCompleteList = [];
+  late PlaceDetailsModel placeDetailsModel ;
+  late Uuid uuid ;
+  String? sessionToken ;
   Set<Marker> markers = {};
   Set<Polyline> polylines = {};
   Set<Polygon> polygons = {};
   Set<Circle> circles = {};
   @override
   void onInit() {
-    location = Location();
+    googleMapsPlaceService = GoogleMapsPlaceService();
+   // location = Location();
     locationService = LocationService();
+    uuid = const Uuid();
     initMarker();
-    updateMyLocation();
-    textEditingController = TextEditingController() ;
-    textEditingController.addListener(() {
-      
-    });
-    //updateCurrentLocation();
+    //updateMyLocation();
+    textEditingController = TextEditingController();
+    fetchPrediction();
+
+    updateCurrentLocation();
     // initPolyline();
     // initPolygon();
     // initCircles();
     super.onInit();
   }
-   @override
+
+  @override
   void dispose() {
     textEditingController.dispose();
   }
+
   @override
   void onClose() {
     googleMapController?.dispose();
@@ -60,16 +71,20 @@ class GoogleController extends GetxController {
   void updateCurrentLocation() async {
     try {
       var locationData = await locationService.getCurrentLocation();
-      setmyLocationMarker(locationData) ;
-      var cameraPosition = CameraPosition(target: LatLng(locationData.latitude!, locationData.longitude!,),
-      zoom: 16
-      ) ;
-      googleMapController?.animateCamera(CameraUpdate.newCameraPosition(cameraPosition)) ;
+      setmyLocationMarker(locationData);
+      var cameraPosition = CameraPosition(
+          target: LatLng(
+            locationData.latitude!,
+            locationData.longitude!,
+          ),
+          zoom: 16);
+      googleMapController
+          ?.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
     } on LocationServesException catch (e) {
       // todo
     } on LocationPermissionException catch (e) {
       // todo
-    } 
+    }
   }
 
   void navigateCamera(LocationData locationData) {
@@ -87,6 +102,34 @@ class GoogleController extends GetxController {
       );
       isFirstcall = false;
     }
+  }
+
+  void fetchPrediction() {
+    textEditingController.addListener(() async {
+     
+        sessionToken ??= uuid.v4() ;
+      
+      if (textEditingController.text.isNotEmpty) {
+        placeAutoCompleteList.clear();
+        placeAutoCompleteList = await googleMapsPlaceService.getPerdictions(
+            input: textEditingController.text,sessionToken: sessionToken!);
+            
+      }else{
+        placeAutoCompleteList.clear();
+      }
+      update();
+    });
+  }
+  
+  void fetchPlacedetails(String placeId)async{
+    placeDetailsModel =await googleMapsPlaceService.getPlaceDatials(placeId: placeId) ;
+    sessionToken = null ;
+    //clear text field 
+    textEditingController.clear();
+    //clear list
+    placeAutoCompleteList.clear();
+    update() ;
+  
   }
 
   void setmyLocationMarker(LocationData locationData) {

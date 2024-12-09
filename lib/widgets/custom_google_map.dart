@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:google_maps/controller/google_controller.dart';
+import 'package:google_maps/widgets/custom_pridection_listview.dart';
 import 'package:google_maps/widgets/custom_text_field.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -41,8 +42,16 @@ class CustomGoogleMap extends StatelessWidget {
                       top: 16,
                       left: 16,
                       right: 16,
-                      child: CustomTextField(
-                        textEditingController: controller.textEditingController,
+                      child: Column(
+                        children: [
+                          CustomTextField(
+                            textEditingController: controller.textEditingController,
+                          ),
+                        const  SizedBox(
+                            height: 12,
+                          ),
+                          CustomPredictionListView()
+                        ],
                       ),
                     ),
                   ],
@@ -51,3 +60,4 @@ class CustomGoogleMap extends StatelessWidget {
             ));
   }
 }
+
